@@ -15,6 +15,61 @@
    save环节同样使用了别包的函数  
   
 7. 终端运行go work init ./secret ./tool,引用包名“muxi-backend/tool/safePaper"
+## 最后main.go代码 ##
+```Go
+package main
+
+import (
+	"io"
+	"log"
+	"muxi-backend/tool/getDecryptedPaper"
+	"muxi-backend/tool/savePaper"
+	"net/http"
+)
+
+func main() {
+	// 目标根URL
+	url := "http://121.43.151.190:8000/"
+	// 发送 GET 请求,返回的结果还需要进行处理才能得到你需要的结果
+	response, err := http.Get(url + "paper")
+	if err != nil {
+
+		log.Fatalf("Failed to send request: %v", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+
+	}(response.Body)
+	buf := make([]byte, 1024)
+	n, _ := response.Body.Read(buf)
+	encodedPaper := string(buf[:n])
+
+	resp, err := http.Get(url + "secret")
+	if err != nil {
+		log.Fatalf("Failed to send request: %v", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+
+	}(resp.Body)
+	buf2 := make([]byte, 1024)
+	n, _ = resp.Body.Read(buf2)
+	key := string(buf2[:n])
+
+	//解密
+	data := getDecryptedPaper.GetDecryptedPaper(encodedPaper, key)
+	//将文件内容保存到相关路径中
+	savePaper.SavePaper("C:\\Users\\zhuangziting\\Downloads\\muxi-backend\\paper\\Academician Sun's papers.txt", data)
+}
+```
+![image](https://github.com/user-attachments/assets/f2f072f7-8b72-4ef7-9287-6f32a08513f7)
+
 ### go work 的用法
 **应用场景：同一个代码仓库里有多个互相依赖的Go Module**
 当我们在同一个代码仓库里开发多个互相依赖的Go Module时，我们可以使用go.work，而不是在go.mod里使用replace指令。  
